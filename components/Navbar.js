@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import getWeb3 from '../utils/web3-config';
 import { CalendarOutlined, DollarOutlined, UnorderedListOutlined, WalletOutlined } from '@ant-design/icons';
 
-const topMenu = () => {
+const TopMenu = () => {
 
     const [disabled, setDisabled] = useState(false);
 
@@ -53,4 +53,4 @@ const topMenu = () => {
     )
 };
 
-export default topMenu;
+export default TopMenu;
