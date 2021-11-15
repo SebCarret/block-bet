@@ -54,7 +54,7 @@ export default function Match({ fixture }) {
       // console.log(web3);
       getBetInfos(web3.provider, web3.address, id)
     }
-  }, [web3]);
+  }, [web3, id]);
 
   // const connectWallet = async () => {
   //   const Web3 = await getWeb3();

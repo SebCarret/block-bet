@@ -15,9 +15,9 @@ const resultPage = ({ result }) => {
             </Head>
             <h1>Final score</h1>
             <div className={styles.row}>
-                <Image src={result.homeLogo} width={80} />
+                <Image src={result.homeLogo} width={80} alt="home team logo" />
                 <Title level={2}>{result.score}</Title>
-                <Image src={result.awayLogo} width={80} />
+                <Image src={result.awayLogo} width={80} alt="away team logo" />
             </div>
             <div className={styles.row}>
                 <Statistic title="Total bets amount" value={`${10} ETH`} />

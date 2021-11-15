@@ -77,7 +77,7 @@ export default function Home() {
       render: team => (
         <div className={styles.home}>
           <Paragraph className={styles.homeName}>{team.name}</Paragraph>
-          <Image src={team.logo} width={50} />
+          <Image src={team.logo} width={50} alt="home team logo" />
         </div>
 
       )
@@ -94,7 +94,7 @@ export default function Home() {
       key: 'away',
       render: team => (
         <div className={styles.away}>
-          <Image src={team.logo} width={50} />
+          <Image src={team.logo} width={50} alt="away team logo" />
           <Paragraph className={styles.awayName}>{team.name}</Paragraph>
         </div>
 

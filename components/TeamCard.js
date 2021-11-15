@@ -14,7 +14,7 @@ const TeamCard = (props) => {
 
     return (
         <Card
-            cover={<Image src={logo} width={80} />}
+            cover={<Image src={logo} width={80} alt="team logo" />}
             className={styles.card}
         >
             <div className={styles.cardBody}>
@@ -39,7 +39,7 @@ const TeamCard = (props) => {
                                 score = "Lose"
                             };
                             return (
-                                <Tooltip title={score}>
+                                <Tooltip title={score} key={`team-result-${i}`}>
                                     <Badge count={icon} />
                                 </Tooltip>
                             )
