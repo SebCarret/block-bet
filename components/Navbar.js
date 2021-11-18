@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Menu, Button } from 'antd';
+import { Menu, Button, message } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import getWeb3 from '../utils/web3-config';
 import { CalendarOutlined, DollarOutlined, UnorderedListOutlined, WalletOutlined } from '@ant-design/icons';
@@ -8,6 +8,7 @@ import { CalendarOutlined, DollarOutlined, UnorderedListOutlined, WalletOutlined
 const TopMenu = () => {
 
     const [disabled, setDisabled] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const dispatch = useDispatch();
     const web3 = useSelector(state => state.web3);
@@ -17,11 +18,25 @@ const TopMenu = () => {
     }, [web3])
 
     const connectWallet = async () => {
+        setLoading(true);
         const Web3 = await getWeb3();
         let provider = Web3.currentProvider;
         setTimeout(() => {
-            Web3.eth.getAccounts((error, accounts) => {
-                dispatch({ type: 'web3Infos', provider, address: accounts[0] })
+            Web3.eth.getAccounts(async (error, accounts) => {
+                const request = await fetch('/api/player/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `address=${accounts[0]}`
+                });
+                const response = await request.json();
+                console.log(response);
+                if (response.success) {
+                    dispatch({ type: 'web3Infos', provider, address: accounts[0] });
+                    dispatch({ type: 'playerInfos', player: response.player })
+                } else {
+                    message.error(response.error);
+                };
+                setLoading(false)
             })
         }, 8000)
     };
@@ -44,6 +59,7 @@ const TopMenu = () => {
                     danger
                     icon={<WalletOutlined />}
                     disabled={disabled}
+                    loading={loading}
                     onClick={connectWallet}
                 >
                     Connect MetaMask

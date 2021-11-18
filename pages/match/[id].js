@@ -41,10 +41,12 @@ export default function Match({ fixture }) {
   const [provider, setProvider] = useState(null);
   const [address, setAddress] = useState('');
   const [disabled, setDisabled] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [form] = Form.useForm();
   const date = useSelector(state => state.date);
   const web3 = useSelector(state => state.web3);
+  const player = useSelector(state => state.player);
   const dispatch = useDispatch();
   const router = useRouter();
   const { id } = router.query;
@@ -82,6 +84,7 @@ export default function Match({ fixture }) {
   };
 
   const onBetClick = async values => {
+    setLoading(true);
     await betContract.setProvider(web3.provider);
     const instance = await betContract.deployed();
     const playerBet = await instance.setBet(id, values.team, { from: web3.address, value: Number(values.bet) * 1000000000000000000 })
@@ -100,6 +103,33 @@ export default function Match({ fixture }) {
       win = Number(values.bet) + (Number(values.bet) / (betsDraw + Number(values.bet)) * (betsHomeTeam + betsAwayTeam));
       message = `You win ${win.toFixed(4)} ETH if it will be a draw !`;
     };
+
+    const datas = JSON.stringify({
+        userId: player._id,
+        matchId: id,
+        league: 'fr',
+        homeTeam: fixture.home.team,
+        awayTeam: fixture.away.team,
+        amountBet: Number(values.bet),
+        teamSelected: values.team,
+        date: date
+    });
+
+    const request = await fetch(`${server}/api/player/add-bet`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: datas
+    });
+    const response = await request.json();
+    if (response.success) dispatch({ type: 'playerInfos', player: response.player })
+
+    const requestTwo = await fetch(`${server}/api/bets/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: datas
+    });
+    const responseTwo = await requestTwo.json();
+
     if (values) {
       notification['success']({
         message: 'Thanks for your bet',
@@ -107,6 +137,7 @@ export default function Match({ fixture }) {
       })
       form.resetFields();
     }
+    setLoading(false)
   };
 
   const getWinner = async () => {
@@ -181,7 +212,7 @@ export default function Match({ fixture }) {
               <Input type="number" placeholder="0.0001 ETH" />
             </Form.Item>
             <Form.Item>
-              <Button disabled={disabled} type="primary" htmlType="submit" icon={<DollarOutlined />}>BET</Button>
+              <Button loading={loading} disabled={disabled} type="primary" htmlType="submit" icon={<DollarOutlined />}>BET</Button>
             </Form.Item>
           </Form>
           : null
@@ -192,7 +223,7 @@ export default function Match({ fixture }) {
       }
       {
         web3 !== null
-          ? <div className={styles.row}>
+          ? <div className={styles.statsContainer}>
             <Statistic title={`Total bet on ${fixture.home.team}`} value={`${betsHomeTeam} ETH`} />
             <Statistic title={`Total bet on ${fixture.away.team}`} value={`${betsAwayTeam} ETH`} />
             <Statistic title='Total bet on a draw' value={`${betsDraw} ETH`} />
