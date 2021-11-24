@@ -33,7 +33,7 @@ const { Countdown } = Statistic;
 // const betsAwayTeam = 0;
 // const betsDraw = 0;
 
-const resultPage = ({result}) => {
+const ResultPage = ({result}) => {
 
     const [betsHomeTeam, setBetsHomeTeam] = useState(0);
     const [betsAwayTeam, setBetsAwayTeam] = useState(0);
