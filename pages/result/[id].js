@@ -124,7 +124,7 @@ const ResultPage = ({result}) => {
     )
 };
 
-export default resultPage;
+export default ResultPage;
 
 export async function getServerSideProps({ params }) {
     let bet;
