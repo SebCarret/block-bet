@@ -37,9 +37,6 @@ export default function Match({ fixture }) {
   const [betsHomeTeam, setBetsHomeTeam] = useState(0);
   const [betsAwayTeam, setBetsAwayTeam] = useState(0);
   const [betsDraw, setBetsDraw] = useState(0);
-  const [playerWin, setPlayerWin] = useState(0);
-  const [provider, setProvider] = useState(null);
-  const [address, setAddress] = useState('');
   const [disabled, setDisabled] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -53,7 +50,6 @@ export default function Match({ fixture }) {
 
   useEffect(() => {
     if (web3 !== null) {
-      // console.log(web3);
       getBetInfos(web3.provider, web3.address, id)
     }
   }, [web3, id]);
@@ -93,11 +89,11 @@ export default function Match({ fixture }) {
     if (values.team === "home") {
       setBetsHomeTeam(betsHomeTeam + Number(values.bet));
       win = Number(values.bet) + (Number(values.bet) / (betsHomeTeam + Number(values.bet)) * (betsAwayTeam + betsDraw));
-      message = `You win ${win.toFixed(4)} ETH if ${fixture.homeTeam} win !`
+      message = `You win ${win.toFixed(4)} ETH if ${fixture.home.team} win !`
     } else if (values.team === "away") {
       setBetsAwayTeam(betsAwayTeam + Number(values.bet));
       win = Number(values.bet) + (Number(values.bet) / (betsAwayTeam + Number(values.bet)) * (betsHomeTeam + betsDraw));
-      message = `You win ${win.toFixed(4)} ETH if ${fixture.awayTeam} win !`
+      message = `You win ${win.toFixed(4)} ETH if ${fixture.away.team} win !`
     } else {
       setBetsDraw(betsDraw + Number(values.bet));
       win = Number(values.bet) + (Number(values.bet) / (betsDraw + Number(values.bet)) * (betsHomeTeam + betsAwayTeam));
@@ -109,7 +105,9 @@ export default function Match({ fixture }) {
         matchId: id,
         league: 'fr',
         homeTeam: fixture.home.team,
+        homeTeamId: fixture.home.id,
         awayTeam: fixture.away.team,
+        awayTeamId: fixture.away.id,
         amountBet: Number(values.bet),
         teamSelected: values.team,
         date: date

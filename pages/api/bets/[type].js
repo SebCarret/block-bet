@@ -1,7 +1,6 @@
 import DbConnect from '../../../models/connection';
 import playerModel from '../../../models/player';
 import betsModel from '../../../models/bets';
-import bcrypt from 'bcrypt';
 
 const handleBet = async (req, res) => {
 
@@ -17,6 +16,25 @@ const handleBet = async (req, res) => {
                 res.status(200).json({ success: true, list: finalList })
             } catch (error) {
                 res.status(400).json({ success: false, error })
+            }
+            break;
+        case 'one':
+            try {
+                const bet = await betsModel.findOne({ matchId: req.query.matchId });
+                bet ? res.status(200).json({ success: true, bet }) : res.status(200).json({ success: false, error: "no bet found with this matchId..." })
+            } catch (error) {
+                res.status(400).json({ success: false, error })
+            }
+            break;
+        case 'claim':
+            try {
+                const matchId = Number(req.body.matchId);
+                const betToUpdate = await betsModel.updateOne({ matchId: matchId }, { claimed: true });
+                betToUpdate.modifiedCount === 1
+                    ? res.status(200).json({ success: true, message: "this bet is now over !" })
+                    : res.status(200).json({ success: false, message: "error while updating this bet... Please try again" })
+            } catch (error) {
+                res.status(400).json({ success: false, message: error })
             }
             break;
         case 'add':
@@ -43,13 +61,16 @@ const handleBet = async (req, res) => {
                         matchId: Number(req.body.matchId),
                         league: req.body.league,
                         homeTeam: req.body.homeTeam,
+                        homeTeamId: req.body.homeTeamId,
                         awayTeam: req.body.awayTeam,
+                        awayTeamId: req.body.awayTeamId,
                         amountBet: Number(req.body.amountBet),
                         date: req.body.date,
+                        claimed: false,
                         players: [req.body.userId]
                     });
                     const betSaved = await newBet.save();
-                    if (betSaved){
+                    if (betSaved) {
                         success = true;
                         message = "new bet created in database !"
                     } else {

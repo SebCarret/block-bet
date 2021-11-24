@@ -25,12 +25,14 @@ export default function handler(req, res) {
 
                 const fixture = {
                     home: {
+                        id: results.body.response[0].teams.home.id,
                         team: results.body.response[0].teams.home.name,
                         logo: results.body.response[0].teams.home.logo,
                         lastResults: lastHomeResults.split(''),
                         homeStats
                     },
                     away: {
+                        id: results.body.response[0].teams.home.id,
                         team: results.body.response[0].teams.away.name,
                         logo: results.body.response[0].teams.away.logo,
                         lastResults: lastAwayResults.split(''),

@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { List, Avatar, Button, Tag, Badge, Empty } from 'antd';
 import { DollarOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
-import { server } from '../config';
 
 // const userBets = [
 //     {
@@ -83,7 +82,7 @@ export default function AllBets() {
                         bordered
                         style={{ width: '50%' }}
                         itemLayout="horizontal"
-                        dataSource={player.betsList}
+                        dataSource={betsList}
                         renderItem={item =>
                         (<List.Item>
                             <List.Item.Meta
@@ -106,7 +105,7 @@ export default function AllBets() {
                                     shape="round"
                                     type="primary"
                                     icon={<EyeOutlined />}
-                                    onClick={() => router.push(`/match/${item.matchId}`)}
+                                    onClick={() => router.push(`/result/${item.matchId}`)}
                                 >
                                     DETAILS
                                 </Button>

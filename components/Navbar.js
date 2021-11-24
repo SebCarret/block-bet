@@ -29,7 +29,6 @@ const TopMenu = () => {
                     body: `address=${accounts[0]}`
                 });
                 const response = await request.json();
-                console.log(response);
                 if (response.success) {
                     dispatch({ type: 'web3Infos', provider, address: accounts[0] });
                     dispatch({ type: 'playerInfos', player: response.player })
@@ -54,7 +53,7 @@ const TopMenu = () => {
             </Menu.Item>
             <Menu.Item>
                 <Button
-                    type="primary"
+                    shape="round"
                     size="large"
                     danger
                     icon={<WalletOutlined />}
@@ -62,7 +61,7 @@ const TopMenu = () => {
                     loading={loading}
                     onClick={connectWallet}
                 >
-                    Connect MetaMask
+                    {loading ? "Connecting..." : "Connect MetaMask"}
                 </Button>
             </Menu.Item>
         </Menu>
