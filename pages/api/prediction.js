@@ -32,7 +32,7 @@ export default function handler(req, res) {
                         homeStats
                     },
                     away: {
-                        id: results.body.response[0].teams.home.id,
+                        id: results.body.response[0].teams.away.id,
                         team: results.body.response[0].teams.away.name,
                         logo: results.body.response[0].teams.away.logo,
                         lastResults: lastAwayResults.split(''),

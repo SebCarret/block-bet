@@ -42,6 +42,8 @@ const playerInfo = async (req, res) => {
                             awayTeam: req.body.awayTeam,
                             amountBet: amountBet,
                             teamSelected: req.body.teamSelected,
+                            claimed: false,
+                            win: false,
                             date: req.body.date
                         });
                         const betSaved = await player.save();
@@ -59,6 +61,35 @@ const playerInfo = async (req, res) => {
                     message = "This player doesn't exist sorry..."
                 };
                 res.status(200).json({ success, message, player: playerUpdated })
+            } catch (error) {
+                res.status(400).json({ success: false, message: error })
+            }
+            break;
+        case 'close':
+            try {
+                let success = false;
+                let message
+                const player = await playerModel.findById(req.body.userId);
+                if (player){
+                    const matchId = Number(req.body.matchId);
+                    const betToFind = player.betsList.find(bet => bet.matchId == matchId);
+                    if (betToFind){
+                        betToFind.claimed = true;
+                        if (betToFind.teamSelected === req.body.winner) betToFind.win = true;
+                        const playerSaved = await player.save();
+                        if (playerSaved){
+                            success = true;
+                            message = "Bet updated for this player !"
+                        } else {
+                            message = "Error while updating bet for this player... Please try again"
+                        }
+                    } else {
+                        message = "No bet found with this match ID..."
+                    }
+                } else {
+                    message = "No player found with this ID..."
+                };
+                res.status(200).json({success, message})
             } catch (error) {
                 res.status(400).json({ success: false, message: error })
             }

@@ -3,17 +3,12 @@ import Head from 'next/head';
 import { useRouter } from 'next/router'
 import styles from '../../styles/Match.module.css';
 import { Row, Col, Avatar, Typography, Progress, Form, Input, Button, Select, Statistic, notification } from 'antd';
-import { DollarOutlined } from '@ant-design/icons';
+import { DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import TopMenu from '../../components/Navbar';
 import TeamCard from '../../components/TeamCard';
 import { useSelector, useDispatch } from 'react-redux';
 import { server } from '../../config';
-import getWeb3 from '../../utils/web3-config';
-import contract from '@truffle/contract';
-import BettingContract from '../../utils/Betting.json';
-
-const betContract = contract(BettingContract);
-const weiConversion = 1000000000000000000;
+import { getBetInfos, setBet } from '../../utils/SC-functions';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
@@ -50,7 +45,13 @@ export default function Match({ fixture }) {
 
   useEffect(() => {
     if (web3 !== null) {
-      getBetInfos(web3.provider, web3.address, id)
+      (async () => {
+        const loadBets = await getBetInfos(web3.provider, web3.address, id);
+        setBetsHomeTeam(loadBets.homeTeam);
+        setBetsAwayTeam(loadBets.awayTeam);
+        setBetsDraw(loadBets.draw);
+        setDisabled(loadBets.havePlayerBet)
+      })()
     }
   }, [web3, id]);
 
@@ -66,24 +67,22 @@ export default function Match({ fixture }) {
   //   dispatch({ type: 'web3Infos', provider, address })
   // };
 
-  const getBetInfos = async (provider, address, id) => {
-    await betContract.setProvider(provider);
-    const instance = await betContract.deployed();
-    const alreadyBet = await instance.checkPlayerExists(address, id);
-    if (alreadyBet) setDisabled(true);
-    const getBetsHome = await instance.AmountHome(id);
-    setBetsHomeTeam(getBetsHome / weiConversion);
-    const getBetsAway = await instance.AmountAway(id);
-    setBetsAwayTeam(getBetsAway / weiConversion);
-    const getBetsDraw = await instance.AmountDraw(id);
-    setBetsDraw(getBetsDraw / weiConversion);
-  };
+  // const getBetInfos = async (provider, address, id) => {
+  //   await betContract.setProvider(provider);
+  //   const instance = await betContract.deployed();
+  //   const alreadyBet = await instance.checkPlayerExists(address, id);
+  //   if (alreadyBet) setDisabled(true);
+  //   const getBetsHome = await instance.AmountHome(id);
+  //   setBetsHomeTeam(getBetsHome / weiConversion);
+  //   const getBetsAway = await instance.AmountAway(id);
+  //   setBetsAwayTeam(getBetsAway / weiConversion);
+  //   const getBetsDraw = await instance.AmountDraw(id);
+  //   setBetsDraw(getBetsDraw / weiConversion);
+  // };
 
   const onBetClick = async values => {
     setLoading(true);
-    await betContract.setProvider(web3.provider);
-    const instance = await betContract.deployed();
-    const playerBet = await instance.setBet(id, values.team, { from: web3.address, value: Number(values.bet) * 1000000000000000000 })
+    await setBet(web3, id, values.team, Number(values.bet));
     let win;
     let message;
     if (values.team === "home") {
@@ -101,16 +100,16 @@ export default function Match({ fixture }) {
     };
 
     const datas = JSON.stringify({
-        userId: player._id,
-        matchId: id,
-        league: 'fr',
-        homeTeam: fixture.home.team,
-        homeTeamId: fixture.home.id,
-        awayTeam: fixture.away.team,
-        awayTeamId: fixture.away.id,
-        amountBet: Number(values.bet),
-        teamSelected: values.team,
-        date: date
+      userId: player._id,
+      matchId: id,
+      league: 'fr',
+      homeTeam: fixture.home.team,
+      homeTeamId: fixture.home.id,
+      awayTeam: fixture.away.team,
+      awayTeamId: fixture.away.id,
+      amountBet: Number(values.bet),
+      teamSelected: values.team,
+      date: date
     });
 
     const request = await fetch(`${server}/api/player/add-bet`, {
@@ -138,12 +137,6 @@ export default function Match({ fixture }) {
     setLoading(false)
   };
 
-  const getWinner = async () => {
-    await betContract.setProvider(web3.provider);
-    const instance = await betContract.deployed();
-    await instance.distributePrizes(id, 'home', { from: web3.address });
-  }
-
   return (
     <div className={styles.container}>
       <Head>
@@ -155,7 +148,14 @@ export default function Match({ fixture }) {
       <h1>{web3 !== null ? "It's time to bet !" : "Please connect your MetaMask wallet to bet"}</h1>
       <div className={styles.row}>
         <TeamCard type="home" fixture={fixture} />
-        <Title level={2} style={{width: '33%', textAlign: 'center'}}>VS</Title>
+        {/* <Title level={2} style={{width: '33%', textAlign: 'center'}}>VS</Title> */}
+        <Countdown
+          style={{ width: '33%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          title="Match starts in :"
+          prefix={<ClockCircleOutlined />}
+          value={date}
+          format="DD:HH:mm:ss"
+        />
         <TeamCard type="away" fixture={fixture} />
       </div>
       <div className={styles.row}>
@@ -214,10 +214,6 @@ export default function Match({ fixture }) {
             </Form.Item>
           </Form>
           : null
-          // : <div className={styles.row}>
-          //   <Paragraph>Please connect your MetaMask wallet to bet !</Paragraph>
-          //   <Button type="primary" size="large" danger onClick={connectWallet}>Connect MetaMask</Button>
-          // </div>
       }
       {
         web3 !== null
@@ -226,13 +222,9 @@ export default function Match({ fixture }) {
             <Statistic title={`Total bet on ${fixture.away.team}`} value={`${betsAwayTeam} ETH`} />
             <Statistic title='Total bet on a draw' value={`${betsDraw} ETH`} />
             <Countdown title="Time left to bet" value={date} format="DD:HH:mm:ss" />
-            {/* <Button type="primary" danger onClick={getWinner}>
-          GET WINNER
-        </Button> */}
           </div>
           : null
       }
-
     </div>
   )
 };

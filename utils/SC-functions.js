@@ -24,6 +24,12 @@ export const getBetInfos = async (provider, address, id) => {
     }
 };
 
+export const setBet = async (web3, id, team, amount) => {
+    await betContract.setProvider(web3.provider);
+    const instance = await betContract.deployed();
+    await instance.setBet(id, team, { from: web3.address, value: amount * weiConversion })
+};
+
 export const distributePrizes = async (web3, id, result) => {
     await betContract.setProvider(web3.provider);
     const instance = await betContract.deployed();

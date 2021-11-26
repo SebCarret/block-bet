@@ -8,36 +8,15 @@ import { useSelector } from 'react-redux';
 import TopMenu from '../../components/Navbar';
 import { getBetInfos, distributePrizes } from '../../utils/SC-functions';
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 const { Countdown } = Statistic;
 
-// const result = {
-//     matchId: 718489,
-//     homeTeamId: 95,
-//     awayTeamId: 93,
-//     status: "Match Finished",
-//     score: "1 - 1",
-//     winner: "draw",
-//     amountBet: 0.001,
-//     date: "2021-11-21T14:00:00.000+00:00",
-//     claimed: false,
-//     players: ["6194e50e9e3ec23efcd97ab7"]
-// };
-
-// const playerBet = {
-//     amountBet: 0.001,
-//     teamSelected: "home"
-// };
-
-// const betsHomeTeam = 0.001;
-// const betsAwayTeam = 0;
-// const betsDraw = 0;
-
-const ResultPage = ({result}) => {
+const ResultPage = ({ result }) => {
 
     const [betsHomeTeam, setBetsHomeTeam] = useState(0);
     const [betsAwayTeam, setBetsAwayTeam] = useState(0);
     const [betsDraw, setBetsDraw] = useState(0);
+    const [loading, setLoading] = useState(false);
 
     const player = useSelector(state => state.player);
     const web3 = useSelector(state => state.web3);
@@ -56,6 +35,27 @@ const ResultPage = ({result}) => {
     }, [web3, id])
 
     const playerBet = player.betsList.find(e => e.matchId == id);
+
+    const onClaimClick = async () => {
+
+        const datas = JSON.stringify({
+            matchId: id,
+            userId: player._id,
+            winner: result.winner
+        });
+
+        await fetch(`${server}/api/bets/claim`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: datas
+        });
+
+        await fetch(`${server}/api/player/close`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: datas
+        })
+    };
 
     let potentialGain;
     let choice;
@@ -112,7 +112,13 @@ const ResultPage = ({result}) => {
                                     type="primary"
                                     size="large"
                                     shape="round"
-                                    onClick={() => distributePrizes(web3, id, result.winner)}
+                                    loading={loading}
+                                    onClick={() => {
+                                        setLoading(true);
+                                        distributePrizes(web3, id, result.winner);
+                                        onClaimClick();
+                                        setLoading(false)
+                                    }}
                                 >
                                     Claim your gain
                                 </Button>
@@ -146,4 +152,4 @@ export async function getServerSideProps({ params }) {
     return {
         props: { result: bet }
     }
-}
+};
