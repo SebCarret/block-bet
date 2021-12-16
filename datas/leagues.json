@@ -1,0 +1,34 @@
+{
+    "list": [
+        {
+            "name": "Ligue 1 Uber Eats",
+            "league_id": 61,
+            "country": "fr",
+            "logo": "https://media.api-sports.io/football/leagues/61.png"
+        },
+        {
+            "name": "Premier League",
+            "league_id": 39,
+            "country": "uk",
+            "logo": "https://media.api-sports.io/football/leagues/39.png" 
+        },
+        {
+            "name": "La Liga Santander",
+            "league_id": 140,
+            "country": "es",
+            "logo": "https://media.api-sports.io/football/leagues/140.png" 
+        },
+        {
+            "name": "Serie A",
+            "league_id": 135,
+            "country": "it",
+            "logo": "https://media.api-sports.io/football/leagues/135.png" 
+        }, 
+        {
+            "name": "Bundesliga",
+            "league_id": 78,
+            "country": "all",
+            "logo": "https://media.api-sports.io/football/leagues/78.png" 
+        }
+    ]
+}

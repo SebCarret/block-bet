@@ -5,7 +5,6 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  height: 100vh;
 }
 
 .home {
@@ -17,6 +16,8 @@
 
 .homeName {
   margin-right: 10px;
+  margin-bottom: 0px !important;
+  text-align: right;
 }
 
 .away {
@@ -28,6 +29,7 @@
 
 .awayName {
   margin-left: 10px;
+  margin-bottom: 0px !important;
 }
 
 .h1 {

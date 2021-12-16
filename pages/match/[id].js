@@ -2,30 +2,18 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router'
 import styles from '../../styles/Match.module.css';
-import { Row, Col, Avatar, Typography, Progress, Form, Input, Button, Select, Statistic, notification } from 'antd';
+import { Row, Col, Avatar, Typography, Progress, Form, Input, Button, Select, Statistic, notification, Divider, Empty } from 'antd';
 import { DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import TopMenu from '../../components/Navbar';
 import TeamCard from '../../components/TeamCard';
 import { useSelector, useDispatch } from 'react-redux';
 import { server } from '../../config';
 import { getBetInfos, setBet } from '../../utils/SC-functions';
+import { useIsomorphicEffect } from '../../utils/IsomorphicEffect';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
 const { Countdown } = Statistic;
-
-// const fixture = {
-//   homeTeam: 'Nice',
-//   homeLogo: 'https://media.api-sports.io/football/teams/84.png',
-//   homeId: 84,
-//   awayTeam: 'Lyon',
-//   awayLogo: "https://media.api-sports.io/football/teams/80.png",
-//   awayId: 80,
-//   date: "2021-10-24T11:00:00+00:00",
-//   homeChance: 10,
-//   drawChance: 45,
-//   awayChance: 45
-// };
 
 export default function Match({ fixture }) {
 
@@ -43,7 +31,9 @@ export default function Match({ fixture }) {
   const router = useRouter();
   const { id } = router.query;
 
-  useEffect(() => {
+  const isomorphicEffect = useIsomorphicEffect();
+
+  isomorphicEffect(() => {
     if (web3 !== null) {
       (async () => {
         const loadBets = await getBetInfos(web3.provider, web3.address, id);
@@ -54,31 +44,6 @@ export default function Match({ fixture }) {
       })()
     }
   }, [web3, id]);
-
-  // const connectWallet = async () => {
-  //   const Web3 = await getWeb3();
-  //   await betContract.setProvider(Web3.currentProvider);
-  //   let address;
-  //   let provider = Web3.currentProvider;
-  //   await Web3.eth.getAccounts((error, accounts) => {
-  //     address = accounts[0];
-  //   });
-  //   getBetInfos(provider, address, id);
-  //   dispatch({ type: 'web3Infos', provider, address })
-  // };
-
-  // const getBetInfos = async (provider, address, id) => {
-  //   await betContract.setProvider(provider);
-  //   const instance = await betContract.deployed();
-  //   const alreadyBet = await instance.checkPlayerExists(address, id);
-  //   if (alreadyBet) setDisabled(true);
-  //   const getBetsHome = await instance.AmountHome(id);
-  //   setBetsHomeTeam(getBetsHome / weiConversion);
-  //   const getBetsAway = await instance.AmountAway(id);
-  //   setBetsAwayTeam(getBetsAway / weiConversion);
-  //   const getBetsDraw = await instance.AmountDraw(id);
-  //   setBetsDraw(getBetsDraw / weiConversion);
-  // };
 
   const onBetClick = async values => {
     setLoading(true);
@@ -102,7 +67,7 @@ export default function Match({ fixture }) {
     const datas = JSON.stringify({
       userId: player._id,
       matchId: id,
-      league: 'fr',
+      league: fixture.country,
       homeTeam: fixture.home.team,
       homeTeamId: fixture.home.id,
       awayTeam: fixture.away.team,
@@ -145,84 +110,127 @@ export default function Match({ fixture }) {
         <link rel="icon" href="/betting.png" />
       </Head>
       <TopMenu />
-      <h1>{web3 !== null ? "It's time to bet !" : "Please connect your MetaMask wallet to bet"}</h1>
-      <div className={styles.row}>
-        <TeamCard type="home" fixture={fixture} />
-        {/* <Title level={2} style={{width: '33%', textAlign: 'center'}}>VS</Title> */}
-        <Countdown
-          style={{ width: '33%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-          title="Match starts in :"
-          prefix={<ClockCircleOutlined />}
-          value={date}
-          format="DD:HH:mm:ss"
-        />
-        <TeamCard type="away" fixture={fixture} />
-      </div>
-      <div className={styles.row}>
-        <div className={styles.prediction}>
-          <Paragraph>Chances of victory</Paragraph>
+      <Row className={styles.row}>
+        <Col xs={24} md={{ span: 6, offset: 3 }}>
+          <TeamCard type="home" fixture={fixture} />
+        </Col>
+        <Col xs={24} md={6}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 10 }}>
+            <Countdown
+              className={styles.statComponent}
+              title="Match starts in :"
+              prefix={<ClockCircleOutlined />}
+              value={date}
+              format="DD:HH:mm:ss"
+            />
+            <Divider orientation="center"><Avatar size={50} >VS</Avatar></Divider>
+            {
+              web3 !== null
+                ? <Form form={form} layout="vertical" onFinish={onBetClick} className={styles.form}>
+                  <Form.Item
+                    name="team"
+                    rules={[
+                      { required: true, message: 'Please select a result' }
+                    ]}
+                  >
+                    <Select defaultValue="The winner will be :" style={{ width: "100%" }}>
+                      <Option value="home">{fixture.home.team}</Option>
+                      <Option value="away">{fixture.away.team}</Option>
+                      <Option value="draw">Nobody (draw)</Option>
+                    </Select>
+                  </Form.Item>
+                  <Form.Item
+                    name="bet"
+                    rules={[
+                      { required: true, message: 'Your bet is required' },
+                      () => ({
+                        validator(_, value) {
+                          if (!value) {
+                            return Promise.reject();
+                          }
+                          if (isNaN(value)) {
+                            return Promise.reject("Your bet has to be a number.");
+                          }
+                          if (value < 0.0001) {
+                            return Promise.reject('Min. bet required: 0.0001 ETH.');
+                          }
+                          return Promise.resolve();
+                        }
+                      }),
+                    ]}
+                  >
+                    <Input type="number" placeholder="0.0001 ETH" />
+                  </Form.Item>
+                  <Form.Item>
+                    <Button
+                      style={{ width: "100%" }}
+                      size="large"
+                      loading={loading}
+                      disabled={disabled}
+                      type="primary"
+                      htmlType="submit"
+                      icon={<DollarOutlined />}
+                    >
+                      BET
+                    </Button>
+                  </Form.Item>
+                </Form>
+                : <Empty
+                  image="/wallet.png"
+                  description="Please connect your MetaMask wallet to bet"
+                />
+            }
+          </div>
+        </Col>
+        <Col xs={24} md={6}>
+          <TeamCard type="away" fixture={fixture} />
+        </Col>
+      </Row>
+      <Row className={styles.row}>
+        <Col className={styles.prediction} xs={8} md={{ span: 6, offset: 3 }}>
+          <Paragraph>Victory % for {fixture.home.team}</Paragraph>
           <Progress type="circle" percent={fixture.predictions.home} width={80} />
-        </div>
-        <div className={styles.prediction}>
+        </Col>
+        <Col className={styles.prediction} xs={8} md={6}>
           <Paragraph>Chances of draw</Paragraph>
           <Progress type="circle" percent={fixture.predictions.draw} width={80} />
-        </div>
-        <div className={styles.prediction}>
-          <Paragraph>Chances of victory</Paragraph>
+        </Col>
+        <Col className={styles.prediction} xs={8} md={6}>
+          <Paragraph>Victory % for {fixture.away.team}</Paragraph>
           <Progress type="circle" percent={fixture.predictions.away} width={80} />
-        </div>
-      </div>
+        </Col>
+      </Row>
       {
         web3 !== null
-          ? <Form form={form} layout="inline" onFinish={onBetClick} className={styles.form}>
-            <Form.Item
-              name="team"
-              rules={[
-                { required: true, message: 'Please select a result' }
-              ]}
-            >
-              <Select defaultValue="The winner will be :" style={{ width: 180 }}>
-                <Option value="home">{fixture.home.team}</Option>
-                <Option value="away">{fixture.away.team}</Option>
-                <Option value="draw">Nobody (draw)</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              name="bet"
-              rules={[
-                { required: true, message: 'Your bet is required' },
-                () => ({
-                  validator(_, value) {
-                    if (!value) {
-                      return Promise.reject();
-                    }
-                    if (isNaN(value)) {
-                      return Promise.reject("Your bet has to be a number.");
-                    }
-                    if (value < 0.0001) {
-                      return Promise.reject('Min. bet required: 0.0001 ETH.');
-                    }
-                    return Promise.resolve();
-                  }
-                }),
-              ]}
-            >
-              <Input type="number" placeholder="0.0001 ETH" />
-            </Form.Item>
-            <Form.Item>
-              <Button loading={loading} disabled={disabled} type="primary" htmlType="submit" icon={<DollarOutlined />}>BET</Button>
-            </Form.Item>
-          </Form>
-          : null
-      }
-      {
-        web3 !== null
-          ? <div className={styles.statsContainer}>
-            <Statistic title={`Total bet on ${fixture.home.team}`} value={`${betsHomeTeam} ETH`} />
-            <Statistic title={`Total bet on ${fixture.away.team}`} value={`${betsAwayTeam} ETH`} />
-            <Statistic title='Total bet on a draw' value={`${betsDraw} ETH`} />
-            <Countdown title="Time left to bet" value={date} format="DD:HH:mm:ss" />
-          </div>
+          ? <Row className={styles.row}>
+            <Col xs={8} md={{ span: 6, offset: 3 }}>
+              <Statistic
+                title={`Total bet on ${fixture.home.team}`}
+                value={betsHomeTeam}
+                precision={2}
+                suffix="ETH"
+                className={styles.statComponent}
+              />
+            </Col>
+            <Col xs={8} md={6}>
+              <Statistic
+                title='Total bet on a draw'
+                value={betsDraw}
+                precision={2}
+                suffix="ETH"
+                className={styles.statComponent}
+              />
+            </Col>
+            <Col xs={8} md={6}>
+              <Statistic
+                title={`Total bet on ${fixture.away.team}`}
+                value={betsAwayTeam}
+                precision={2}
+                suffix="ETH"
+                className={styles.statComponent}
+              />
+            </Col>
+          </Row>
           : null
       }
     </div>

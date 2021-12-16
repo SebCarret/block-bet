@@ -4,6 +4,7 @@ import { Menu, Button, message } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import getWeb3 from '../utils/web3-config';
 import { CalendarOutlined, DollarOutlined, UnorderedListOutlined, WalletOutlined } from '@ant-design/icons';
+import { useIsomorphicEffect } from '../utils/IsomorphicEffect';
 
 const TopMenu = () => {
 
@@ -12,8 +13,9 @@ const TopMenu = () => {
 
     const dispatch = useDispatch();
     const web3 = useSelector(state => state.web3);
+    const isomorphicEffect = useIsomorphicEffect();
 
-    useEffect(() => {
+    isomorphicEffect(() => {
         if (web3 != null) setDisabled(true)
     }, [web3])
 
@@ -41,7 +43,7 @@ const TopMenu = () => {
     };
 
     return (
-        <Menu selectable={false} mode="horizontal" style={{ width: '50%', padding: 10, display: 'flex', justifyContent: 'space-between' }}>
+        <Menu selectable={false} mode="horizontal" style={{ width: '100%', padding: 10, display: 'flex', justifyContent: 'center' }}>
             <Menu.Item icon={<CalendarOutlined />}>
                 <Link href="/">Matchs</Link>
             </Menu.Item>

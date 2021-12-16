@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Image, Typography, Statistic, Tag, Button, Result } from 'antd';
+import { Row, Col, Image, Typography, Statistic, Tag, Button, Result } from 'antd';
+import { DollarOutlined } from '@ant-design/icons';
 import styles from '../../styles/Result.module.css';
 import { server } from '../../config';
 import { useRouter } from 'next/router';
@@ -7,6 +8,7 @@ import Head from 'next/head';
 import { useSelector } from 'react-redux';
 import TopMenu from '../../components/Navbar';
 import { getBetInfos, distributePrizes } from '../../utils/SC-functions';
+import { useIsomorphicEffect } from '../../utils/IsomorphicEffect';
 
 const { Title } = Typography;
 const { Countdown } = Statistic;
@@ -17,13 +19,16 @@ const ResultPage = ({ result }) => {
     const [betsAwayTeam, setBetsAwayTeam] = useState(0);
     const [betsDraw, setBetsDraw] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [isClaimed, setIsClaimed] = useState(result.claimed);
 
     const player = useSelector(state => state.player);
     const web3 = useSelector(state => state.web3);
     const router = useRouter();
     const { id } = router.query;
 
-    useEffect(() => {
+    const isomorphicEffect = useIsomorphicEffect();
+
+    isomorphicEffect(() => {
         if (web3 !== null) {
             (async () => {
                 const loadBets = await getBetInfos(web3.provider, web3.address, id);
@@ -38,23 +43,32 @@ const ResultPage = ({ result }) => {
 
     const onClaimClick = async () => {
 
+        setLoading(true);
+
+        await distributePrizes(web3, id, result.winner);
+
         const datas = JSON.stringify({
             matchId: id,
             userId: player._id,
             winner: result.winner
         });
 
-        await fetch(`${server}/api/bets/claim`, {
+        const claimRequest = await fetch(`${server}/api/bets/claim`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: datas
         });
 
+        const claimResponse = await claimRequest.json();
+
         await fetch(`${server}/api/player/close`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: datas
-        })
+        });
+
+        if (claimResponse.success) setIsClaimed(true);
+        setLoading(false)
     };
 
     let potentialGain;
@@ -81,23 +95,39 @@ const ResultPage = ({ result }) => {
                 <link rel="icon" href="/betting.png" />
             </Head>
             <TopMenu />
-            <Title level={2}>{result.status}</Title>
-            <div className={styles.row}>
-                <Image src={`https://media.api-sports.io/football/teams/${result.homeTeamId}.png`} width={80} alt="home team logo" />
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <Row className={styles.row}>
+                <Col xs={{ span: 24 }} md={{ span: 12, offset: 6 }}>
+                    <Title level={2} style={{ textAlign: 'center' }}>{result.status}</Title>
+                </Col>
+            </Row>
+            <Row className={styles.row}>
+                <Col className={styles.teams} xs={8} md={{ span: 6, offset: 3 }}>
+                    <Image preview={false} src={`https://media.api-sports.io/football/teams/${result.homeTeamId}.png`} width={80} alt="home team logo" />
+                </Col>
+                <Col xs={8} md={6} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                     <Title level={2}>{result.score}</Title>
                     <Tag>{`You bet on ${choice}`}</Tag>
-                </div>
-                <Image src={`https://media.api-sports.io/football/teams/${result.awayTeamId}.png`} width={80} alt="away team logo" />
-            </div>
+                </Col>
+                <Col className={styles.teams} xs={8} md={6}>
+                    <Image preview={false} src={`https://media.api-sports.io/football/teams/${result.awayTeamId}.png`} width={80} alt="away team logo" />
+                </Col>
+            </Row>
             {
                 result.status !== "Match Finished"
-                    ? <div className={styles.row}>
-                        <Statistic title="Total bets amount" value={`${result.amountBet} ETH`} />
-                        <Statistic title="Number of bettors" value={result.players.length} />
-                        <Statistic title="Your bet" value={`${playerBet.amountBet} ETH`} />
-                        <Statistic title="Potential gain" value={`${potentialGain} ETH`} />
-                    </div>
+                    ? <Row className={styles.row}>
+                        <Col className={styles.statistics} xs={12} md={{ span: 4, offset: 4 }}>
+                            <Statistic title="Total bets amount" value={`${result.amountBet} ETH`} />
+                        </Col>
+                        <Col className={styles.statistics} xs={12} md={4}>
+                            <Statistic title="Number of bettors" value={result.players.length} />
+                        </Col>
+                        <Col className={styles.statistics} xs={12} md={4}>
+                            <Statistic title="Your bet" value={`${playerBet.amountBet} ETH`} />
+                        </Col>
+                        <Col className={styles.statistics} xs={12} md={4}>
+                            <Statistic title="Potential gain" value={`${potentialGain} ETH`} />
+                        </Col>
+                    </Row>
                     : <Result
                         status={result.winner === playerBet.teamSelected ? "success" : "error"}
                         title={result.winner === playerBet.teamSelected ? "Great !" : "Bad news..."}
@@ -107,18 +137,14 @@ const ResultPage = ({ result }) => {
                                 : `You lose ${playerBet.amountBet} ETH...`
                         }
                         extra={
-                            !result.claimed && result.winner === playerBet.teamSelected
+                            !isClaimed && result.winner === playerBet.teamSelected
                                 ? <Button
                                     type="primary"
                                     size="large"
                                     shape="round"
+                                    icon={<DollarOutlined />}
                                     loading={loading}
-                                    onClick={() => {
-                                        setLoading(true);
-                                        distributePrizes(web3, id, result.winner);
-                                        onClaimClick();
-                                        setLoading(false)
-                                    }}
+                                    onClick={onClaimClick}
                                 >
                                     Claim your gain
                                 </Button>

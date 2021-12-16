@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { List, Avatar, Button, Badge, Empty, Spin } from 'antd';
+import { Grid, Row, Col, List, Avatar, Button, Badge, Empty, Spin, Typography } from 'antd';
 import { DollarOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import { server } from '../config';
+import { useIsomorphicEffect } from '../utils/IsomorphicEffect';
 
 // const allBets = [
 //     {
@@ -34,13 +35,19 @@ import { server } from '../config';
 //     }
 // ];
 
+const { Title } = Typography;
+const { useBreakpoint } = Grid;
+
 export default function AllBets() {
 
     const [betsList, setBetsList] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const screens = useBreakpoint();
 
-    useEffect(() => {
+    const isomorphicEffect = useIsomorphicEffect();
+
+    isomorphicEffect(() => {
         const loadList = async () => {
             const request = await fetch(`${server}/api/bets/all`);
             const response = await request.json();
@@ -58,64 +65,77 @@ export default function AllBets() {
     }, []);
 
     if (loading) {
-        return <Spin size="large" style={{marginTop: 25}} />
+        return <Spin size="large" style={{ marginTop: 25 }} />
     } else {
         if (betsList.length === 0) {
-            return (<>
-                <h1>No incoming bets...</h1>
-                <Empty
-                    description="Be the next to bet on a match !"
-                >
-                    <Button
-                        icon={<EyeOutlined />}
-                        type="primary"
-                        shape="round"
-                        onClick={() => router.push("/")}
+            return (<Row style={{ margin: 10, width: '100%' }}>
+                <Col xs={{ span: 24 }} md={{ span: 12, offset: 6 }}>
+                    <Title level={2} style={{ textAlign: 'center', marginTop: 15, marginBottom: 25 }}>No incoming bets...</Title>
+                </Col>
+                <Col xs={{ span: 24 }} md={{ span: 12, offset: 6 }}>
+                    <Empty
+                        description="Be the next to bet on a match !"
                     >
-                        See matchs
-                    </Button>
-                </Empty>
-            </>)
+                        <Button
+                            icon={<EyeOutlined />}
+                            type="primary"
+                            // shape="round"
+                            size="large"
+                            onClick={() => router.push("/")}
+                        >
+                            See matchs
+                        </Button>
+                    </Empty>
+                </Col>
+            </Row>)
         } else {
             return (
-                <>
-                    <h1>Bets availables</h1>
-                    <List
-                        bordered
-                        style={{ width: '50%' }}
-                        itemLayout="horizontal"
-                        dataSource={betsList}
-                        renderItem={item => (
-                            <List.Item>
-                                <List.Item.Meta
-                                    avatar={<Avatar src={`/picto-${item.league}.png`} />}
-                                    title={`${item.homeTeam} - ${item.awayTeam}`}
-                                    description={item.date}
-                                />
-                                <div style={{ marginRight: 25 }}>
-                                    <Badge count={item.amountBet} color="blue">
-                                        <Avatar src="/picto-ethereum.png" />
-                                    </Badge>
-                                </div>
-                                <div style={{ marginRight: 25 }}>
-                                    <Badge count={item.players} color="blue">
-                                        <Avatar icon={<UserOutlined />} />
-                                    </Badge>
-                                </div>
-                                <div>
-                                    <Button
-                                        shape="round"
-                                        type="primary"
-                                        icon={<DollarOutlined />}
-                                        onClick={() => router.push(`/match/${item.matchId}`)}
-                                    >
-                                        BET
-                                    </Button>
-                                </div>
-                            </List.Item>
-                        )}
-                    />
-                </>
+                <Row style={{ margin: 10, width: '100%' }}>
+                    <Col xs={{ span: 24 }} md={{ span: 12, offset: 6 }}>
+                        <Title level={2} style={{ textAlign: 'center', marginTop: 15, marginBottom: 25 }}>Bets availables</Title>
+                    </Col>
+                    <Col xs={{ span: 24 }} md={{ span: 12, offset: 6 }}>
+                        <List
+                            bordered
+                            style={{ width: '100%' }}
+                            itemLayout="horizontal"
+                            dataSource={betsList}
+                            renderItem={item => (
+                                <List.Item>
+                                    <List.Item.Meta
+                                        avatar={<Avatar src={`/picto-${item.league}.png`} />}
+                                        title={`${item.homeTeam} - ${item.awayTeam}`}
+                                        description={screens.sm === false ? `Players : ${item.players} - Amount : ${item.amountBet} ETH` : item.date}
+                                    />
+                                    {screens.sm &&
+                                        <div style={{ marginRight: 25 }}>
+                                            <Badge count={item.amountBet} color="blue">
+                                                <Avatar src="/picto-ethereum.png" />
+                                            </Badge>
+                                        </div>}
+                                    {screens.sm &&
+                                        <div style={{ marginRight: 25 }}>
+                                            <Badge count={item.players} color="blue">
+                                                <Avatar icon={<UserOutlined />} />
+                                            </Badge>
+                                        </div>
+                                    }
+                                    <div>
+                                        <Button
+                                            // shape="round"
+                                            ghost
+                                            type="primary"
+                                            icon={<DollarOutlined />}
+                                            onClick={() => router.push(`/match/${item.matchId}`)}
+                                        >
+                                            BET
+                                        </Button>
+                                    </div>
+                                </List.Item>
+                            )}
+                        />
+                    </Col>
+                </Row>
             )
         }
     }
