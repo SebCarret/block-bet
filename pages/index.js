@@ -150,6 +150,7 @@ export default function Home() {
   const leaguesList = Leagues.list.map((league, i) => {
     return (
       <Col
+        key={`leagueId-${league.id}`}
         xs={{ span: 4, offset: i == 0 ? 2 : 0 }}
         md={{ span: 2, offset: i == 0 ? 7 : 0 }}
         style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
@@ -187,10 +188,6 @@ export default function Home() {
           </Divider>
         </Col>
       </Row>
-      {/* <div className={styles.title}>
-        <h1 className={styles.h1}>Choose your match :</h1>
-        <Switch checkedChildren="Next" unCheckedChildren="Past" onChange={switchChange}/>
-      </div> */}
       <Row style={{ margin: 10, width: '100%' }}>
         <Col xs={24} md={{ span: 12, offset: 6 }}>
           <Table showHeader={false} dataSource={list} columns={columns} />
