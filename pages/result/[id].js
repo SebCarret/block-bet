@@ -60,7 +60,7 @@ const ResultPage = ({ result }) => {
             winner: result.winner
         });
 
-        const claimRequest = await fetch(`${server}/api/bets/claim`, {
+        const claimRequest = await fetch('/api/bets/claim', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: datas
@@ -68,7 +68,7 @@ const ResultPage = ({ result }) => {
 
         const claimResponse = await claimRequest.json();
 
-        await fetch(`${server}/api/player/close`, {
+        await fetch('/api/player/close', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: datas
