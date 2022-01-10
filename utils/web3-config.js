@@ -1,25 +1,23 @@
 import Web3 from 'web3';
 
-const getWeb3 = () => {
-    let web3;
-    try {
-        if (window.ethereum) {
-            web3 = new Web3(window.ethereum)
-            try {
-                window.ethereum.enable()
-            } catch (error) {
-                console.log("connection to Ethereum rejected by user");
-            }
-        } else if (window.web3){
-            web3 = new Web3(window.web3.currentProvider);
-            console.log("connection to another provider");
-        } else {
-            console.log('Please install MetaMask to access Ethereum blockchain !')
+const getWeb3 = async () => {
+    let connected = false;
+    let provider;
+    let accounts;
+    if (window.ethereum) {
+        try {
+            connected = true;
+            provider = await window.ethereum.on('connect', infos => console.log(infos));
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        } catch (error) {
+            console.log(error);
         }
-    } catch (error) {
-        console.log(error);
-    };
-    return web3
+    }
+    return {
+        connected,
+        provider,
+        accounts
+    }
 };
 
 export default getWeb3;

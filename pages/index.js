@@ -3,7 +3,7 @@ import Head from 'next/head';
 import styles from '../styles/Home.module.css';
 import { Row, Col, Table, Image, Button, Typography, Divider, Switch, Avatar } from 'antd';
 import { ClockCircleOutlined, DollarOutlined } from '@ant-design/icons';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import TopMenu from '../components/Navbar';
 import { useIsomorphicEffect } from '../utils/IsomorphicEffect';
@@ -27,11 +27,20 @@ export default function Home() {
 
   const router = useRouter();
   const dispatch = useDispatch();
+  const change = useSelector(state => state.change);
 
   const isomorphicEffect = useIsomorphicEffect()
 
   isomorphicEffect(() => {
-    getNextMatchs(leagueSelected)
+    getNextMatchs(leagueSelected);
+    const getChange = async () => {
+      const request = await fetch('/api/crypto-price');
+      const response = await request.json();
+      dispatch({type: 'getValue', value: response.value})
+    };
+    if (change === null){
+      getChange()
+    }
   }, [leagueSelected]);
 
   const getPrevMatchs = () => {

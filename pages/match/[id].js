@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router'
 import styles from '../../styles/Match.module.css';
-import { Row, Col, Avatar, Typography, Progress, Form, Input, Button, Select, Statistic, notification, Divider, Empty } from 'antd';
+import { Row, Col, Avatar, Typography, Progress, Form, Input, Button, Select, Statistic, notification, Divider, Empty, Tag } from 'antd';
 import { DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import TopMenu from '../../components/Navbar';
 import TeamCard from '../../components/TeamCard';
@@ -27,6 +27,7 @@ export default function Match({ fixture }) {
   const date = useSelector(state => state.date);
   const web3 = useSelector(state => state.web3);
   const player = useSelector(state => state.player);
+  const change = useSelector(state => state.change);
   const dispatch = useDispatch();
   const router = useRouter();
   const { id } = router.query;
@@ -40,7 +41,12 @@ export default function Match({ fixture }) {
         setBetsHomeTeam(loadBets.homeTeam);
         setBetsAwayTeam(loadBets.awayTeam);
         setBetsDraw(loadBets.draw);
-        setDisabled(loadBets.havePlayerBet)
+        setDisabled(loadBets.havePlayerBet);
+        if (change === null) {
+          const request = await fetch('/api/crypto-price');
+          const response = await request.json();
+          dispatch({ type: 'getValue', value: response.value })
+        }
       })()
     }
   }, [web3, id]);
@@ -121,7 +127,7 @@ export default function Match({ fixture }) {
               title="Match starts in :"
               prefix={<ClockCircleOutlined />}
               value={date}
-              format="DD:HH:mm:ss"
+              format="DD[d] HH[h] mm[m] ss[s]"
             />
             <Divider orientation="center"><Avatar size={50} >VS</Avatar></Divider>
             {
@@ -203,32 +209,32 @@ export default function Match({ fixture }) {
       {
         web3 !== null
           ? <Row className={styles.row}>
-            <Col xs={8} md={{ span: 6, offset: 3 }}>
+            <Col xs={8} md={{ span: 6, offset: 3 }} className={styles.statComponent}>
               <Statistic
                 title={`Total bet on ${fixture.home.team}`}
-                value={betsHomeTeam}
+                value={betsHomeTeam * change}
                 precision={2}
-                suffix="ETH"
-                className={styles.statComponent}
+                suffix="€"
               />
+              <Tag className={styles.conversion} color="gold">{`${betsHomeTeam.toFixed(2)} ETH`}</Tag>
             </Col>
-            <Col xs={8} md={6}>
+            <Col xs={8} md={6} className={styles.statComponent}>
               <Statistic
                 title='Total bet on a draw'
-                value={betsDraw}
+                value={betsDraw * change}
                 precision={2}
-                suffix="ETH"
-                className={styles.statComponent}
+                suffix="€"
               />
+              <Tag className={styles.conversion} color="gold">{`${betsDraw.toFixed(2)} ETH`}</Tag>
             </Col>
-            <Col xs={8} md={6}>
+            <Col xs={8} md={6} className={styles.statComponent}>
               <Statistic
                 title={`Total bet on ${fixture.away.team}`}
-                value={betsAwayTeam}
+                value={betsAwayTeam * change}
                 precision={2}
-                suffix="ETH"
-                className={styles.statComponent}
+                suffix="€"
               />
+              <Tag className={styles.conversion} color="gold">{`${betsAwayTeam.toFixed(2)} ETH`}</Tag>
             </Col>
           </Row>
           : null

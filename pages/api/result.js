@@ -1,11 +1,11 @@
 import unirest from 'unirest';
 
-export default async function handler(req, res) {
-    try {
-        await unirest.get(`https://api-football-v1.p.rapidapi.com/v3/fixtures?id=${req.query.matchId}`)
+export default function handler(req, res) {
+    return new Promise((resolve, reject) => {
+        unirest.get(`https://api-football-v1.p.rapidapi.com/v3/fixtures?id=${req.query.matchId}`)
             .header({ 'x-rapidapi-key': process.env.API_FOOTBALL_KEY, 'x-rapidapi-host': 'api-football-v1.p.rapidapi.com/v3/' })
-            .end(function (results) {
-                const date = new Date(results.body.response[0].fixture.date);   
+            .then(results => {
+                const date = new Date(results.body.response[0].fixture.date);
                 let status = results.body.response[0].fixture.status.long;
                 let score = status === "Match Finished" ? `${results.body.response[0].goals.home} - ${results.body.response[0].goals.away}` : null;
                 let winner;
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
                     case false:
                         winner = "away"
                         break;
-                    default: 
+                    default:
                         winner = status === "Match Finished" ? "draw" : null
                         break;
                 }
@@ -30,9 +30,12 @@ export default async function handler(req, res) {
                     score,
                     winner
                 }
-                res.status(200).json({ result })
-            });
-    } catch (error) {
-        res.status(400).json({ error })
-    }
+                res.status(200).json({ success: true, result });
+                resolve()
+            })
+            .catch(error => {
+                res.status(400).json({ success: false, error });
+                resolve()
+            })
+    })
 };

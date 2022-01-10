@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Row, Col, Image, Typography, Statistic, Tag, Button, Result } from 'antd';
+import { Row, Col, Image, Typography, Statistic, Tag, Button, Result, Badge } from 'antd';
 import { DollarOutlined } from '@ant-design/icons';
 import styles from '../../styles/Result.module.css';
 import { server } from '../../config';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import TopMenu from '../../components/Navbar';
 import { getBetInfos, distributePrizes } from '../../utils/SC-functions';
 import { useIsomorphicEffect } from '../../utils/IsomorphicEffect';
@@ -23,6 +23,8 @@ const ResultPage = ({ result }) => {
 
     const player = useSelector(state => state.player);
     const web3 = useSelector(state => state.web3);
+    const change = useSelector(state => state.change);
+    const dispatch = useDispatch();
     const router = useRouter();
     const { id } = router.query;
 
@@ -34,7 +36,12 @@ const ResultPage = ({ result }) => {
                 const loadBets = await getBetInfos(web3.provider, web3.address, id);
                 setBetsHomeTeam(loadBets.homeTeam);
                 setBetsAwayTeam(loadBets.awayTeam);
-                setBetsDraw(loadBets.draw)
+                setBetsDraw(loadBets.draw);
+                if (change === null) {
+                    const request = await fetch('/api/crypto-price');
+                    const response = await request.json();
+                    dispatch({ type: 'getValue', value: response.value })
+                  }
             })()
         };
     }, [web3, id])
@@ -114,18 +121,21 @@ const ResultPage = ({ result }) => {
             </Row>
             {
                 result.status !== "Match Finished"
-                    ? <Row className={styles.row}>
+                    ? <Row id={styles.lastRow}>
                         <Col className={styles.statistics} xs={12} md={{ span: 4, offset: 4 }}>
-                            <Statistic title="Total bets amount" value={`${result.amountBet} ETH`} />
-                        </Col>
-                        <Col className={styles.statistics} xs={12} md={4}>
                             <Statistic title="Number of bettors" value={result.players.length} />
                         </Col>
                         <Col className={styles.statistics} xs={12} md={4}>
-                            <Statistic title="Your bet" value={`${playerBet.amountBet} ETH`} />
+                            <Statistic title="Total bets amount" value={result.amountBet * change} precision={2} suffix="€" />
+                            <Tag color="gold" className={styles.conversion}>{`${result.amountBet} ETH`}</Tag>
                         </Col>
                         <Col className={styles.statistics} xs={12} md={4}>
-                            <Statistic title="Potential gain" value={`${potentialGain} ETH`} />
+                            <Statistic title="Your bet" value={playerBet.amountBet * change} precision={2} suffix="€" />
+                            <Tag color="gold" className={styles.conversion}>{`${playerBet.amountBet} ETH`}</Tag>
+                        </Col>
+                        <Col className={styles.statistics} xs={12} md={4}>
+                            <Statistic title="Potential gain" value={potentialGain * change} precision={2} suffix="€" />
+                            <Tag color="gold" className={styles.conversion}>{`${potentialGain} ETH`}</Tag>
                         </Col>
                     </Row>
                     : <Result
@@ -133,8 +143,8 @@ const ResultPage = ({ result }) => {
                         title={result.winner === playerBet.teamSelected ? "Great !" : "Bad news..."}
                         subTitle={
                             result.winner === playerBet.teamSelected
-                                ? `You win ${potentialGain} ETH !`
-                                : `You lose ${playerBet.amountBet} ETH...`
+                                ? `You win ${(potentialGain * change).toFixed(2)} € !`
+                                : `You lose ${(playerBet.amountBet * change).toFixed(2)} €...`
                         }
                         extra={
                             !isClaimed && result.winner === playerBet.teamSelected

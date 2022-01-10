@@ -1,10 +1,10 @@
 import unirest from 'unirest';
 
 export default function handler(req, res) {
-    try {
+    return new Promise((resolve, reject) => {
         unirest.get(`https://api-football-v1.p.rapidapi.com/v3/predictions?fixture=${req.query.matchId}`)
             .header({ 'x-rapidapi-key': process.env.API_FOOTBALL_KEY, 'x-rapidapi-host': 'api-football-v1.p.rapidapi.com/v3/' })
-            .end(function (results) {
+            .then(results => {
 
                 let country;
 
@@ -67,9 +67,12 @@ export default function handler(req, res) {
                         away: Number(results.body.response[0].predictions.percent.away.replace("%", ""))
                     }
                 }
-                res.status(200).json({ fixture })
+                res.status(200).json({success: true, fixture });
+                resolve();
             })
-    } catch (error) {
-        res.status(400).json({ error })
-    }
+            .catch(error => {
+                res.status(400).json({success: false, error });
+                resolve()
+            })
+    })
 };
