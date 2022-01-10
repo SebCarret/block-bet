@@ -83,7 +83,7 @@ export default function Match({ fixture }) {
       date: date
     });
 
-    const request = await fetch(`${server}/api/player/add-bet`, {
+    const request = await fetch('/api/player/add-bet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: datas
@@ -91,7 +91,7 @@ export default function Match({ fixture }) {
     const response = await request.json();
     if (response.success) dispatch({ type: 'playerInfos', player: response.player })
 
-    const requestTwo = await fetch(`${server}/api/bets/add`, {
+    const requestTwo = await fetch('/api/bets/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: datas
