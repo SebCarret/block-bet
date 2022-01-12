@@ -49,7 +49,7 @@ export default function AllBets() {
 
     isomorphicEffect(() => {
         const loadList = async () => {
-            const request = await fetch(`${server}/api/bets/all`);
+            const request = await fetch('/api/bets/all');
             const response = await request.json();
             if (response.success) {
                 for (let bet of response.list) {
