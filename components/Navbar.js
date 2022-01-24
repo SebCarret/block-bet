@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Menu, Button, message } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import getWeb3 from '../utils/web3-config';
-import { CalendarOutlined, DollarOutlined, UnorderedListOutlined, WalletOutlined } from '@ant-design/icons';
+import { CalendarOutlined, DollarOutlined, UserOutlined, WalletOutlined } from '@ant-design/icons';
 import { useIsomorphicEffect } from '../utils/IsomorphicEffect';
 
 const TopMenu = () => {
@@ -15,17 +15,22 @@ const TopMenu = () => {
     const web3 = useSelector(state => state.web3);
     const isomorphicEffect = useIsomorphicEffect();
 
-    useEffect(() => {
+    isomorphicEffect(() => {
         if (window.ethereum) {
-            if (web3 != null) setDisabled(true);
-            window.ethereum.on("accountsChanged", (accounts) => {
-                if (accounts.length > 0) {
-                    dispatch({type: "accountChanged", address: accounts[0]});
-                    getPlayerInfos(accounts[0])
-                } else {
-                    message.error("🦊 Connect to Metamask using the top right button.");
-                }
-            });
+            if (web3 != null) {
+                setDisabled(true);
+                window.ethereum.on("accountsChanged", (accounts) => {
+                    if (accounts.length > 0) {
+                        dispatch({ type: "accountChanged", address: accounts[0] });
+                        getPlayerInfos(accounts[0])
+                    } else {
+                        message.error("🦊 Connect to Metamask using the top right button.");
+                    }
+                });
+                window.ethereum.on("chainChanged", (chainId) => {
+                    dispatch({ type: "chainChanged", chainId });
+                })
+            }
         }
     }, [web3])
 
@@ -38,6 +43,7 @@ const TopMenu = () => {
         } else {
             message.error("Please install Metamask extension to access to your wallet !")
         }
+        if (web3.provider.chainId !== '0x3') message.error("Please switch to Ropsten network on MetaMask")
         setLoading(false)
     };
 
@@ -63,20 +69,20 @@ const TopMenu = () => {
             <Menu.Item icon={<DollarOutlined />}>
                 <Link href="/bets/all">Bets</Link>
             </Menu.Item>
-            <Menu.Item icon={<UnorderedListOutlined />}>
-                <Link href="/bets/user">My bets</Link>
+            <Menu.Item icon={<UserOutlined />}>
+                <Link href="/bets/user">Dashboard</Link>
             </Menu.Item>
             <Menu.Item>
                 <Button
-                    shape="round"
-                    size="large"
+                    // shape="round"
+                    // size="large"
                     danger
                     icon={<WalletOutlined />}
                     disabled={disabled}
                     loading={loading}
                     onClick={connectWallet}
                 >
-                    {loading ? "Connecting..." : "Connect MetaMask"}
+                    {loading ? "Connecting..." : "MetaMask"}
                 </Button>
             </Menu.Item>
         </Menu>

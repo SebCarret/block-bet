@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import styles from '../../styles/Bets.module.css';
 import TopMenu from '../../components/Navbar';
 import AllBets from '../../components/allBets';
-import PlayerBets from '../../components/playerBets';
+import Dashboard from '../../components/Dashboard';
 
 const BetsList = () => {
 
@@ -15,7 +15,7 @@ const BetsList = () => {
             {
                 type === 'all'
                     ? <AllBets />
-                    : <PlayerBets />
+                    : <Dashboard />
             }
 
         </div>

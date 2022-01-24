@@ -199,7 +199,7 @@ export default function Home() {
       </Row>
       <Row style={{ margin: 10, width: '100%' }}>
         <Col xs={24} md={{ span: 12, offset: 6 }}>
-          <Table showHeader={false} dataSource={list} columns={columns} />
+          <Table showHeader={false} dataSource={list} columns={columns}/>
         </Col>
       </Row>
     </div>

@@ -4,6 +4,7 @@ import { Grid, Row, Col, List, Avatar, Button, Badge, Empty, Spin, Typography } 
 import { DollarOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import { server } from '../config';
 import { useIsomorphicEffect } from '../utils/IsomorphicEffect';
+import { useDispatch } from 'react-redux';
 
 // const allBets = [
 //     {
@@ -41,9 +42,10 @@ const { useBreakpoint } = Grid;
 export default function AllBets() {
 
     const [betsList, setBetsList] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
     const screens = useBreakpoint();
+    const dispatch = useDispatch();
 
     const isomorphicEffect = useIsomorphicEffect();
 
@@ -54,7 +56,6 @@ export default function AllBets() {
             if (response.success) {
                 for (let bet of response.list) {
                     bet.players = bet.players.length;
-                    bet.date = new Date(bet.date).toLocaleDateString()
                 }
                 setBetsList(response.list);
                 setLoading(false)
@@ -105,7 +106,7 @@ export default function AllBets() {
                                     <List.Item.Meta
                                         avatar={<Avatar src={`/picto-${item.league}.png`} />}
                                         title={`${item.homeTeam} - ${item.awayTeam}`}
-                                        description={screens.sm === false ? `Players : ${item.players} - Amount : ${item.amountBet} ETH` : item.date}
+                                        description={screens.sm === false ? `Players : ${item.players} - Amount : ${item.amountBet} ETH` : new Date(item.date).toLocaleDateString()}
                                     />
                                     {screens.sm &&
                                         <div style={{ marginRight: 25 }}>
@@ -126,7 +127,10 @@ export default function AllBets() {
                                             ghost
                                             type="primary"
                                             icon={<DollarOutlined />}
-                                            onClick={() => router.push(`/match/${item.matchId}`)}
+                                            onClick={() => {
+                                                dispatch({ type: 'getDate', date: item.date });
+                                                router.push(`/match/${item.matchId}`)
+                                            }}
                                         >
                                             BET
                                         </Button>

@@ -29,10 +29,41 @@ const handleBet = async (req, res) => {
         case 'claim':
             try {
                 const matchId = Number(req.body.matchId);
-                const betToUpdate = await betsModel.updateOne({ matchId: matchId }, { claimed: true });
-                betToUpdate.modifiedCount === 1
-                    ? res.status(200).json({ success: true, message: "this bet is now over !" })
-                    : res.status(200).json({ success: false, message: "error while updating this bet... Please try again" })
+                const betsHomeTeam = Number(req.body.betsHomeTeam);
+                const betsAwayTeam = Number(req.body.betsAwayTeam);
+                const betsDraw = Number(req.body.betsDraw);
+                const bet = await betsModel.findOne({ matchId: matchId })
+                .populate('players')
+                .exec();
+                bet.claimed = true;
+                await bet.save();
+                for (let player of bet.players){
+                    const user = await playerModel.findById(player._id);
+                    const match = await user.betsList.find(e => e.matchId === matchId);
+                    match.claimed = true;
+                    if (match.teamSelected === req.body.winner){
+                        match.win = true;
+                        let gain;
+                        switch (match.teamSelected) {
+                            case 'home':
+                                gain = match.amountBet + (match.amountBet / betsHomeTeam * (betsAwayTeam + betsDraw));
+                                break;
+                            case 'away':
+                                gain = match.amountBet + (match.amountBet / betsAwayTeam * (betsHomeTeam + betsDraw));
+                                break;
+                            case 'draw':
+                                gain = match.amountBet + (match.amountBet / betsDraw * (betsHomeTeam + betsAwayTeam));
+                        };
+                        match.gain = gain;
+                    }
+                    await user.save();
+                };
+                res.status(200).json({success: true, message: "Bet is closed now !"})
+                // res.status(200).json({success: true})
+                // const betToUpdate = await betsModel.updateOne({ matchId: matchId }, { claimed: true });
+                // betToUpdate.modifiedCount === 1
+                //     ? res.status(200).json({ success: true, message: "this bet is now over !" })
+                //     : res.status(200).json({ success: false, message: "error while updating this bet... Please try again" })
             } catch (error) {
                 res.status(400).json({ success: false, message: error })
             }

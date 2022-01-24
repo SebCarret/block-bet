@@ -8,7 +8,12 @@ const getDate = (state = null, action) => {
         let stateCopy = {...state};
         stateCopy.address = action.address;
         return stateCopy
-    } else {
+    } else if (action.type === "chainChanged"){
+        let stateCopy = {...state};
+        stateCopy.provider.chainId = action.chainId;
+        return stateCopy
+    }
+     else {
         return state
     }
 };

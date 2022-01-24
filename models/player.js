@@ -9,6 +9,7 @@ const betsSchema = mongoose.Schema({
     teamSelected: String,
     claimed: Boolean,
     win: Boolean,
+    gain: Number,
     date: Date
 });
 

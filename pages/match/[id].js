@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router'
 import styles from '../../styles/Match.module.css';
-import { Row, Col, Avatar, Typography, Progress, Form, Input, Button, Select, Statistic, notification, Divider, Empty, Tag } from 'antd';
+import { Row, Col, Avatar, Typography, Progress, Form, Input, Button, Select, Statistic, notification, Divider, Empty, Tag, message } from 'antd';
 import { DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import TopMenu from '../../components/Navbar';
 import TeamCard from '../../components/TeamCard';
@@ -37,15 +37,17 @@ export default function Match({ fixture }) {
   isomorphicEffect(() => {
     if (web3 !== null) {
       (async () => {
-        const loadBets = await getBetInfos(web3.provider, web3.address, id);
-        setBetsHomeTeam(loadBets.homeTeam);
-        setBetsAwayTeam(loadBets.awayTeam);
-        setBetsDraw(loadBets.draw);
-        setDisabled(loadBets.havePlayerBet);
-        if (change === null) {
-          const request = await fetch('/api/crypto-price');
-          const response = await request.json();
-          dispatch({ type: 'getValue', value: response.value })
+        if (web3.provider.chainId === '0x3') {
+          const loadBets = await getBetInfos(web3.provider, web3.address, id);
+          setBetsHomeTeam(loadBets.homeTeam);
+          setBetsAwayTeam(loadBets.awayTeam);
+          setBetsDraw(loadBets.draw);
+          setDisabled(loadBets.havePlayerBet);
+          if (change === null) {
+            const request = await fetch('/api/crypto-price');
+            const response = await request.json();
+            dispatch({ type: 'getValue', value: response.value })
+          }
         }
       })()
     }
@@ -53,57 +55,61 @@ export default function Match({ fixture }) {
 
   const onBetClick = async values => {
     setLoading(true);
-    await setBet(web3, id, values.team, Number(values.bet));
-    let win;
-    let message;
-    if (values.team === "home") {
-      setBetsHomeTeam(betsHomeTeam + Number(values.bet));
-      win = Number(values.bet) + (Number(values.bet) / (betsHomeTeam + Number(values.bet)) * (betsAwayTeam + betsDraw));
-      message = `You win ${win.toFixed(4)} ETH if ${fixture.home.team} win !`
-    } else if (values.team === "away") {
-      setBetsAwayTeam(betsAwayTeam + Number(values.bet));
-      win = Number(values.bet) + (Number(values.bet) / (betsAwayTeam + Number(values.bet)) * (betsHomeTeam + betsDraw));
-      message = `You win ${win.toFixed(4)} ETH if ${fixture.away.team} win !`
+    if (web3.provider.chainId === '0x3') {
+      await setBet(web3, id, values.team, Number(values.bet));
+      let win;
+      let notif;
+      if (values.team === "home") {
+        setBetsHomeTeam(betsHomeTeam + Number(values.bet));
+        win = Number(values.bet) + (Number(values.bet) / betsHomeTeam * (betsAwayTeam + betsDraw));
+        notif = `You win ${win.toFixed(4)} ETH if ${fixture.home.team} win !`
+      } else if (values.team === "away") {
+        setBetsAwayTeam(betsAwayTeam + Number(values.bet));
+        win = Number(values.bet) + (Number(values.bet) / betsAwayTeam * (betsHomeTeam + betsDraw));
+        notif = `You win ${win.toFixed(4)} ETH if ${fixture.away.team} win !`
+      } else {
+        setBetsDraw(betsDraw + Number(values.bet));
+        win = Number(values.bet) + (Number(values.bet) / betsDraw * (betsHomeTeam + betsAwayTeam));
+        notif = `You win ${win.toFixed(4)} ETH if it will be a draw !`;
+      };
+
+      const datas = JSON.stringify({
+        userId: player._id,
+        matchId: id,
+        league: fixture.country,
+        homeTeam: fixture.home.team,
+        homeTeamId: fixture.home.id,
+        awayTeam: fixture.away.team,
+        awayTeamId: fixture.away.id,
+        amountBet: Number(values.bet),
+        teamSelected: values.team,
+        date: date
+      });
+
+      const request = await fetch('/api/player/add-bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: datas
+      });
+      const response = await request.json();
+      if (response.success) dispatch({ type: 'playerInfos', player: response.player })
+
+      const requestTwo = await fetch('/api/bets/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: datas
+      });
+      const responseTwo = await requestTwo.json();
+
+      if (values) {
+        notification['success']({
+          message: 'Thanks for your bet',
+          description: notif
+        })
+        form.resetFields();
+      }
     } else {
-      setBetsDraw(betsDraw + Number(values.bet));
-      win = Number(values.bet) + (Number(values.bet) / (betsDraw + Number(values.bet)) * (betsHomeTeam + betsAwayTeam));
-      message = `You win ${win.toFixed(4)} ETH if it will be a draw !`;
-    };
-
-    const datas = JSON.stringify({
-      userId: player._id,
-      matchId: id,
-      league: fixture.country,
-      homeTeam: fixture.home.team,
-      homeTeamId: fixture.home.id,
-      awayTeam: fixture.away.team,
-      awayTeamId: fixture.away.id,
-      amountBet: Number(values.bet),
-      teamSelected: values.team,
-      date: date
-    });
-
-    const request = await fetch('/api/player/add-bet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: datas
-    });
-    const response = await request.json();
-    if (response.success) dispatch({ type: 'playerInfos', player: response.player })
-
-    const requestTwo = await fetch('/api/bets/add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: datas
-    });
-    const responseTwo = await requestTwo.json();
-
-    if (values) {
-      notification['success']({
-        message: 'Thanks for your bet',
-        description: message
-      })
-      form.resetFields();
+      message.error("Please switch to Ropsten network on MetaMask")
     }
     setLoading(false)
   };

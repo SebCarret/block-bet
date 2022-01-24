@@ -4,6 +4,7 @@ const getWeb3 = async () => {
     let connected = false;
     let provider;
     let accounts;
+    let chainId;
     if (window.ethereum) {
         try {
             connected = true;
@@ -12,7 +13,7 @@ const getWeb3 = async () => {
         } catch (error) {
             console.log(error);
         }
-    }
+    };
     return {
         connected,
         provider,

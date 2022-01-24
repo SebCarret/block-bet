@@ -10,7 +10,7 @@ const betSchema = mongoose.Schema({
     amountBet: Number,
     date: Date,
     claimed: Boolean,
-    players: [{type: mongoose.Schema.Types.ObjectId, ref: 'players'}]
+    players: [{type: mongoose.Schema.Types.ObjectId, ref: 'Players'}]
 });
 
 export default mongoose.models.Bets || mongoose.model('Bets', betSchema);

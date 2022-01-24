@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Row, Col, Image, Typography, Statistic, Tag, Button, Result, Badge } from 'antd';
+import { Row, Col, Image, Typography, Statistic, Tag, Button, Result, Badge, message} from 'antd';
 import { DollarOutlined } from '@ant-design/icons';
 import styles from '../../styles/Result.module.css';
 import { server } from '../../config';
@@ -33,65 +33,78 @@ const ResultPage = ({ result }) => {
     isomorphicEffect(() => {
         if (web3 !== null) {
             (async () => {
-                const loadBets = await getBetInfos(web3.provider, web3.address, id);
-                setBetsHomeTeam(loadBets.homeTeam);
-                setBetsAwayTeam(loadBets.awayTeam);
-                setBetsDraw(loadBets.draw);
-                if (change === null) {
-                    const request = await fetch('/api/crypto-price');
-                    const response = await request.json();
-                    dispatch({ type: 'getValue', value: response.value })
-                  }
+                if (web3.provider.chainId === '0x3') {
+                    const loadBets = await getBetInfos(web3.provider, web3.address, id);
+                    setBetsHomeTeam(loadBets.homeTeam);
+                    setBetsAwayTeam(loadBets.awayTeam);
+                    setBetsDraw(loadBets.draw);
+                    if (change === null) {
+                        const request = await fetch('/api/crypto-price');
+                        const response = await request.json();
+                        dispatch({ type: 'getValue', value: response.value })
+                    }
+                }
             })()
         };
-    }, [web3, id])
+    }, [web3, id]);
 
     const playerBet = player.betsList.find(e => e.matchId == id);
-
-    const onClaimClick = async () => {
-
-        setLoading(true);
-
-        await distributePrizes(web3, id, result.winner);
-
-        const datas = JSON.stringify({
-            matchId: id,
-            userId: player._id,
-            winner: result.winner
-        });
-
-        const claimRequest = await fetch('/api/bets/claim', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: datas
-        });
-
-        const claimResponse = await claimRequest.json();
-
-        await fetch('/api/player/close', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: datas
-        });
-
-        if (claimResponse.success) setIsClaimed(true);
-        setLoading(false)
-    };
 
     let potentialGain;
     let choice;
     switch (playerBet.teamSelected) {
         case 'home':
-            potentialGain = playerBet.amountBet + (playerBet.amountBet / (betsHomeTeam + playerBet.amountBet) * (betsAwayTeam + betsDraw));
+            potentialGain = playerBet.amountBet + (playerBet.amountBet / betsHomeTeam * (betsAwayTeam + betsDraw));
             choice = result.homeTeam;
             break;
         case 'away':
-            potentialGain = playerBet.amountBet + (playerBet.amountBet / (betsAwayTeam + playerBet.amountBet) * (betsHomeTeam + betsDraw));
+            potentialGain = playerBet.amountBet + (playerBet.amountBet / betsAwayTeam * (betsHomeTeam + betsDraw));
             choice = result.awayTeam;
             break;
         case 'draw':
-            potentialGain = playerBet.amountBet + (playerBet.amountBet / (betsDraw + playerBet.amountBet) * (betsHomeTeam + betsAwayTeam));
+            potentialGain = playerBet.amountBet + (playerBet.amountBet / betsDraw * (betsHomeTeam + betsAwayTeam));
             choice = "a draw"
+    };
+
+    const onClaimClick = async () => {
+
+        setLoading(true);
+
+        if (web3.provider.chainId === '0x3') {
+            await distributePrizes(web3, id, result.winner);
+
+            const datas = JSON.stringify({
+                matchId: id,
+                userId: player._id,
+                winner: result.winner,
+                betsHomeTeam,
+                betsAwayTeam,
+                betsDraw
+            });
+
+            await fetch('/api/bets/claim', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: datas
+            });
+
+            const claimRequest =  await fetch('/api/player/find-bet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: datas
+            });
+
+            const claimResponse = await claimRequest.json();
+
+            if (claimResponse.success){
+                setIsClaimed(true);
+                dispatch({type: 'betUpdated', bet: claimResponse.bet})
+            } ;
+        } else {
+            message.error("Please switch to Ropsten network on MetaMask")
+        };
+
+        setLoading(false)
     };
 
     return (
